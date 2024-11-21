@@ -1,7 +1,7 @@
 
 
 # Captain Deity Discord Bot 
-![Captain Deity Bot Logo](https://github.com/YourRepo/Captain-Deity-Bot/blob/main/Assets/logo.png)  
+![Captain Deity Bot Logo](https://github.com/DrDead0/Deity_Discord-Bot/blob/main/Logo/pirate-removebg-preview.png)  
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
