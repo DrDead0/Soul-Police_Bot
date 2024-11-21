@@ -96,21 +96,45 @@ async def on_message(message):
         await auto_mute(message.author, message.guild, reason="Spamming detected.")
         bot.message_log[message.author.id].clear()
 
+
     if message.content.lower() == "!rules":
         rules_message = """
-        📜 **Server Rules** 📜
-        1️⃣ **Discord TOS & Guidelines**: Follow Discord's rules!  
-        2️⃣ **Bot Rules**: Use bots appropriately.  
-        3️⃣ **No Racism**: Zero tolerance policy.  
-        4️⃣ **Stay Organized**: Use channels correctly.  
-        5️⃣ **No NSFW Content**: Keep it clean!  
-        6️⃣ **Respect Voice Channels**: No screaming or spam.  
-        7️⃣ **No Spam**: Text, image, or emoji spamming is not allowed.  
-        8️⃣ **No Begging**: For currency or Nitro.  
-        9️⃣ **Advertisements**: Use proper channels.  
-        🔟 **Common Sense**: Be respectful and kind!  
-        """
-        await message.channel.send(rules_message)
+    **📜 Server Rules 📜**
+
+    **1️⃣ Follow Discord's TOS & Guidelines**  
+    Respect Discord's Terms of Service and community guidelines. This is the foundation for everything
+
+    **2️⃣ Use Bots Responsibly**  
+    Bots are here to assist, not to be spammed or abused. Be respectful in their usage
+
+    **3️⃣ Zero Tolerance for Racism**  
+    Racism, hate speech, or any discriminatory behavior will not be tolerated. Keep it respectful and kind
+
+    **4️⃣ Stay Organized**  
+    Use the appropriate channels for your discussions. It helps keep the server tidy and everyone informed
+
+    **5️⃣ No NSFW Content**  
+    Keep content appropriate for all ages. No adult content, explicit language, or offensive material
+
+    **6️⃣ Respect in Voice Channels**  
+    No screaming, spamming, or disrupting others in voice channels. Keep it fun for everyone
+
+    **7️⃣ No Spamming**  
+    Whether it's text, images, emojis, or links—avoid excessive spamming. Keep conversations clear and engaging
+
+    **8️⃣ No Begging**  
+    Don’t ask for currency, roles, Nitro, or other in-game advantages. Be patient and work for your goals
+
+    **9️⃣ Advertisements Only in Designated Channels**  
+    Want to promote something? Please do so in the channels created for that purpose only
+    
+    **🔟 Use Common Sense**  
+    Treat others how you want to be treated. Be respectful, considerate, and kind
+    Let's create a friendly, fun, and respectful environment for everyone! 🙌
+    """
+    await message.channel.send(rules_message)
+
+
 
     if message.content.lower() == "!welcome":
         welcome_message = """
@@ -211,5 +235,164 @@ async def reload(ctx):
         os.execv(sys.executable, ['python'] + sys.argv)
     except Exception as e:
         await ctx.send(f"Error reloading the bot: {e}")
+
+#warn
+# Dictionary to track warnings
+warnings = defaultdict(list)
+
+# Slash Command: Warn
+@bot.tree.command(name="warn", description="Warn a user for breaking the rules.")
+@app_commands.describe(member="The user to warn", reason="Reason for the warning")
+async def warn(interaction: discord.Interaction, member: discord.Member, reason: str):
+    if not interaction.user.guild_permissions.kick_members:
+        await interaction.response.send_message("You don't have permission to warn members.", ephemeral=True)
+        return
+
+    # Store the warning
+    warnings[member.id].append(reason)
+
+    # Send feedback to the moderator
+    await interaction.response.send_message(
+        f"{member.mention} has been warned for: **{reason}**. This is warning #{len(warnings[member.id])}."
+    )
+
+    # Notify the user privately
+    try:
+        await member.send(
+            f"⚠️ You have been warned in **{interaction.guild.name}**.\n"
+            f"**Reason:** {reason}\n"
+            f"Please adhere to the server rules to avoid further action."
+        )
+    except discord.Forbidden:
+        await interaction.followup.send(f"Could not DM {member.mention} about the warning.", ephemeral=True)
+#logs
+# Dictionary to keep track of the number of warnings, bans, and mutes
+class ModerationBot(commands.Bot):
+    def __init__(self):
+        super().__init__(
+            command_prefix="!",
+            intents=intents,
+            application_id=APPLICATION_ID
+        )
+        self.warned_count = 0  # Keep track of warned users
+        self.banned_count = 0  # Keep track of banned users
+        self.muted_count = 0  # Keep track of muted users
+
+    # Add these to the respective actions when warnings, bans, or mutes are triggered
+    async def on_warning(self, member):
+        self.warned_count += 1
+
+    async def on_ban(self, member):
+        self.banned_count += 1
+
+    async def on_mute(self, member):
+        self.muted_count += 1
+
+# Adding the logs command to the bot
+@bot.tree.command(name="logs", description="Display bot moderation logs.")
+async def logs(interaction: discord.Interaction):
+    # Create an embed to show the logs in a fancy format
+    embed = discord.Embed(
+        title="Bot Moderation Logs",
+        description="Detailed moderation logs for the bot.",
+        color=discord.Color.gold()
+    )
+
+    embed.add_field(
+        name="Total Warnings",
+        value=f"⚠️ **{bot.warned_count}** users have been warned.",
+        inline=False
+    )
+    embed.add_field(
+        name="Total Bans",
+        value=f"🚫 **{bot.banned_count}** users have been banned.",
+        inline=False
+    )
+    embed.add_field(
+        name="Total Mutes",
+        value=f"🔇 **{bot.muted_count}** users have been muted.",
+        inline=False
+    )
+
+    embed.add_field(
+        name="Additional Info",
+        value="The bot tracks warnings, bans, and mutes as part of its moderation system.",
+        inline=False
+    )
+
+    await interaction.response.send_message(embed=embed)
+
+# When a warning is issued (as an example of how to use the logs)
+async def issue_warning(member, reason="No reason provided"):
+    await bot.on_warning(member)  # Update the count for warnings
+    # Log warning message (This can be logged to a log channel or simply printed)
+    print(f"Warning issued to {member.name}: {reason}")
+    await member.send(f"You have been warned: {reason}")
+
+# When a user is banned (similarly, updating the banned count)
+async def issue_ban(member, reason="No reason provided"):
+    await bot.on_ban(member)  # Update the count for bans
+    # Log the ban
+    print(f"Ban issued to {member.name}: {reason}")
+    await member.send(f"You have been banned: {reason}")
+
+# When a user is muted (similarly, updating the muted count)
+async def issue_mute(member, reason="No reason provided"):
+    await bot.on_mute(member)  # Update the count for mutes
+    # Log the mute
+    print(f"Mute issued to {member.name}: {reason}")
+    await member.send(f"You have been muted: {reason}")
+
+#fakeban and Fake kick
+@bot.tree.command(name="fakeban", description="Simulate banning a user without actually banning them.")
+async def fakeban(interaction: discord.Interaction, user: discord.User, reason: str = "No reason provided"):
+    # Simulate the fake ban by sending a message
+    await interaction.response.send_message(
+        f"🚫 **{user.name}** has been **FAKE-BANNED** for: {reason}",
+        ephemeral=True  # The message is only visible to the user who used the command
+    )
+    # Optionally, you can also send a fake ban message to the server or log the event
+    print(f"Fake ban simulated for {user.name} due to: {reason}")
+    # Sending the fake ban to the server (optional)
+    channel = discord.utils.get(interaction.guild.text_channels, name="general")
+    if channel:
+        await channel.send(f"🚫 **{user.name}** has been **FAKE-BANNED** for: {reason}")
+
+@bot.tree.command(name="fakekick", description="Simulate kicking a user without actually kicking them.")
+async def fakekick(interaction: discord.Interaction, user: discord.User, reason: str = "No reason provided"):
+    # Simulate the fake kick by sending a message
+    await interaction.response.send_message(
+        f"👢 **{user.name}** has been **FAKE-KICKED** for: {reason}",
+        ephemeral=True  # The message is only visible to the user who used the command
+    )
+    # Optionally, you can also send a fake kick message to the server or log the event
+    print(f"Fake kick simulated for {user.name} due to: {reason}")
+    # Sending the fake kick to the server (optional)
+    channel = discord.utils.get(interaction.guild.text_channels, name="general")
+    if channel:
+        await channel.send(f"👢 **{user.name}** has been **FAKE-KICKED** for: {reason}")
+#slowmode
+@bot.tree.command(name="slowmode", description="Set the slowmode in the channel.")
+async def slowmode(interaction: discord.Interaction, duration: int):
+    # Ensure the user has permission to manage messages (moderator check)
+    if not interaction.user.guild_permissions.manage_messages:
+        await interaction.response.send_message("You don't have permission to use this command.", ephemeral=True)
+        return
+
+    # Check if the duration is valid (between 0 and 21600 seconds, Discord's limit for slowmode)
+    if duration < 0 or duration > 21600:
+        await interaction.response.send_message("Please provide a valid duration (between 0 and 21600 seconds).", ephemeral=True)
+        return
+
+    # Set the slowmode in the current channel
+    await interaction.channel.edit(slowmode_delay=duration)
+
+    # Send a confirmation message
+    if duration == 0:
+        await interaction.response.send_message(f"Slowmode has been disabled in {interaction.channel.mention}.", ephemeral=True)
+    else:
+        await interaction.response.send_message(f"Slowmode has been set to {duration} seconds in {interaction.channel.mention}.", ephemeral=True)
+
+
 
 bot.run(BOT_TOKEN)
