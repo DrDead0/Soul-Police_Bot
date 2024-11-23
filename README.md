@@ -12,7 +12,6 @@
   - [Introduction](#introduction)
   - [Features](#features)
   - [Installation](#installation)
-  - [Usage](#usage)
   - [Configuration](#configuration)
   - [Commands](#commands)
     - [Moderation Commands](#moderation-commands)
@@ -82,14 +81,6 @@ Follow these steps to set up Captain Deity on your server:
     ```bash
     python bot.py
     ```
-
-
-
-## Usage
-
-Once installed and running, Captain Deity will come online and begin moderating your server.  
-Use the available commands for moderation, user engagement, and fun pirate-themed interactions.
-
 
 
 ## Configuration
